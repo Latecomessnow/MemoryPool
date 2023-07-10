@@ -1,11 +1,34 @@
 #pragma once
 
-#include <iostream>
-#include <vector>
-#include <time.h>
+//#include <iostream>
+//#include <vector>
+//#include <time.h>
+//
+//using std::cout;
+//using std::endl;
 
-using std::cout;
-using std::endl;
+#include "Common.h"
+
+#ifdef WIN32
+#include <windows.h>
+#else
+	// Linux下的brk mmap向系统申请内存
+#endif
+
+// 直接去堆上按页申请空间
+inline static void* SystemAlloc(size_t kpage)
+{
+#ifdef _WIN32
+	void* ptr = VirtualAlloc(0, kpage << 13, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+#else
+	// linux下brk mmap等
+#endif
+
+	if (ptr == nullptr)
+		throw std::bad_alloc();
+
+	return ptr;
+}
 
 //// 1. 定长内存池
 //template<size_t N> // 每次申请空间都是N个字节的空间
@@ -19,7 +42,7 @@ using std::endl;
 template<class T> // 每次申请空间都是一个T对象的空间
 class ObjectPool
 {
-public:
+public: 
 	T* New()
 	{
 		T* obj = nullptr;
@@ -36,7 +59,8 @@ public:
 			if (_remainBytes < sizeof(T)) // 剩余空间不够开辟一个T对象，将剩下的内存碎片丢弃，重新开辟大块内存
 			{
 				_remainBytes = 128 * 1024;
-				_memory = (char*)malloc(_remainBytes);
+				//_memory = (char*)malloc(_remainBytes);
+				_memory = (char*)SystemAlloc(_remainBytes >> 13);
 				if (_memory == nullptr)
 					throw std::bad_alloc();
 			}
@@ -94,7 +118,7 @@ struct TreeNode
 void TestObjectPool()
 {
 	// 申请释放的轮次
-	const size_t Rounds = 5;
+	const size_t Rounds = 10;
 
 	// 每轮申请释放多少次
 	const size_t N = 100000;
