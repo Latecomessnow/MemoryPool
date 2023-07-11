@@ -2,3 +2,26 @@
 
 #include "ThreadCache.h"
 
+void* ThreadCache::Allocate(size_t size)
+{
+	assert(size > 0);
+	assert(size <= MAX_BYTES);
+	// 按照申请内存空间的字节数去对齐到相应位置的ThreadCache的桶位置
+	size_t alignSize = SizeClass::RoundUp(size);
+	size_t index = SizeClass::Index(alignSize);
+	if (!_freeLists[index].Empty())
+		return _freeLists->Pop();
+	else
+		return FetchFromCentralCache(index, alignSize);
+}
+
+// 从中心缓存获取对象
+void* FetchFromCentralCache(size_t index, size_t size)
+{
+
+}
+
+void ThreadCache::Deallocate(void* ptr, size_t size)
+{
+
+}
