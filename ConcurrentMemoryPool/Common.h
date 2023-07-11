@@ -4,6 +4,7 @@
 #include <vector>
 #include <time.h>
 #include <assert.h>
+#include <thread>
 
 using std::cout;
 using std::endl;
@@ -11,7 +12,8 @@ using std::endl;
 static const size_t MAX_BYTES = 256 * 1024;
 static const size_t NFREELIST = 208;
 
-void*& NextObj(void* obj)
+// 与TLS变量同理，把其外部链接属性改为内部链接属性
+static void*& NextObj(void* obj)
 {
 	return *(void**)obj;
 }
@@ -31,6 +33,7 @@ public:
 		assert(_freeListHead);
 		void* obj = _freeListHead;
 		_freeListHead = NextObj(_freeListHead);
+		return obj;
 	}
 	bool Empty()
 	{
